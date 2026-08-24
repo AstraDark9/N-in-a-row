@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Row Games — 4 &amp; 5 in a Row</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#0f1016;
+    --bg-1:#181a24;
+    --panel:#1c1f2b;
+    --panel-2:#22263400;
+    --wood-1:#4a3324;
+    --wood-2:#2c1e15;
+    --wood-edge:#5c4530;
+    --gold:#f0b93a;
+    --gold-soft:#f0b93a33;
+    --red-soft:#e4572e4d;
+    --teal-soft:#1fb8ad4d;
+    --red:#e4572e;
+    --red-dark:#a83c1e;
+    --teal:#1fb8ad;
+    --teal-dark:#137068;
+    --text:#f3efe6;
+    --muted:#9a96ab;
+    --muted-2:#6d6a7d;
+    --danger:#e4572e;
+    --radius:18px;
+    font-family:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 15% -10%, #2a2440 0%, transparent 45%),
+      radial-gradient(circle at 110% 10%, #10312e 0%, transparent 40%),
+      var(--bg-0);
+    color:var(--text);
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:32px 16px 60px;
+  }
+  h1,h2{font-family:'Space Grotesk',sans-serif; margin:0;}
+  .mono{font-family:'Space Mono',monospace;}
+
+  .wrap{width:100%; max-width:560px; position:relative; z-index:1;}
+
+  .ambient-blob{position:fixed; border-radius:50%; filter:blur(95px); pointer-events:none; z-index:0;}
+  .blob-a{width:420px; height:420px; background:#3a2f6b; opacity:.28; top:-140px; left:-120px; animation:floatA 19s ease-in-out infinite;}
+  .blob-b{width:380px; height:380px; background:#0f4a44; opacity:.28; bottom:-150px; right:-110px; animation:floatB 23s ease-in-out infinite;}
+  @keyframes floatA{0%,100%{transform:translate(0,0);} 50%{transform:translate(46px,32px);}}
+  @keyframes floatB{0%,100%{transform:translate(0,0);} 50%{transform:translate(-34px,-40px);}}
+  @media (prefers-reduced-motion:reduce){
+    .ambient-blob{animation:none;}
+  }
+
+  /* ---------- Setup card ---------- */
+  .setup-card{
+    background:linear-gradient(180deg,var(--panel),#181b26);
+    border:1px solid #2c2f3d;
+    border-radius:var(--radius);
+    padding:32px 28px 28px;
+    box-shadow:0 20px 60px -20px #000a;
+    position:relative;
+    overflow:hidden;
+  }
+  .setup-card::before{
+    content:"";
+    position:absolute; inset:-40% -10% auto -10%;
+    height:220px;
+    background:radial-gradient(ellipse at 50% 0%, var(--gold-soft), transparent 70%);
+    pointer-events:none;
+  }
+  .brand{text-align:center; margin-bottom:30px; position:relative;}
+  .brand-mark{
+    display:inline-flex; gap:6px; margin-bottom:14px;
+  }
+  .brand-mark span{
+    width:11px; height:11px; border-radius:50%;
+    display:inline-block;
+  }
+  .brand-mark span:nth-child(odd){background:var(--red); box-shadow:0 0 10px #e4572e88;}
+  .brand-mark span:nth-child(even){background:var(--teal); box-shadow:0 0 10px #1fb8ad88;}
+  .brand h1{font-size:28px; letter-spacing:-0.02em;}
+  .tagline{color:var(--muted); font-size:14px; margin-top:8px;}
+
+  .field{margin-bottom:26px;}
+  .field h2{font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600; margin-bottom:12px;}
+
+  .choice-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .choice-card{
+    background:#161822;
+    border:1.5px solid #2c2f3d;
+    border-radius:14px;
+    padding:16px 14px;
+    display:flex; flex-direction:column; align-items:flex-start; gap:4px;
+    cursor:pointer; text-align:left;
+    color:var(--text);
+    transition:border-color .15s, transform .1s, background .15s;
+    font-family:inherit;
+  }
+  .choice-card:hover{border-color:#454a5f; transform:translateY(-1px);}
+  .choice-card.selected{border-color:var(--gold); background:#20212a; box-shadow:0 0 0 1px var(--gold) inset, 0 8px 20px -10px #f0b93a55;}
+  .choice-title{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:16px;}
+  .choice-meta{font-size:12.5px; color:var(--muted);}
+  .color-card{flex-direction:row; align-items:center; gap:12px;}
+  .color-card .choice-title, .color-card .choice-meta{display:block;}
+  .color-card > div{display:flex; flex-direction:column;}
+
+  .disc{
+    border-radius:50%; display:inline-block;
+    box-shadow:inset 0 3px 6px #ffffff55, inset 0 -4px 8px #00000055, 0 2px 4px #0006;
+  }
+  .disc-red{background:radial-gradient(circle at 35% 30%, #ff8a5c, var(--red) 55%, var(--red-dark));}
+  .disc-teal{background:radial-gradient(circle at 35% 30%, #6fe8de, var(--teal) 55%, var(--teal-dark));}
+  .color-card .disc{width:30px; height:30px;}
+  .disc.small{width:14px; height:14px; vertical-align:-2px; margin-right:6px;}
+
+  .segmented{display:flex; gap:8px;}
+  .segmented button{
+    flex:1; padding:12px 8px; border-radius:12px; border:1.5px solid #2c2f3d;
+    background:#161822; color:var(--text); font-family:'Space Grotesk',sans-serif;
+    font-weight:600; font-size:14px; cursor:pointer; transition:.15s;
+  }
+  .segmented button:hover{border-color:#454a5f;}
+  .segmented button.selected{border-color:var(--gold); background:#20212a; color:var(--gold);}
+  .hint{font-size:12.5px; color:var(--muted-2); margin-top:10px; min-height:16px;}
+
+  .start-btn{
+    width:100%; padding:16px; border-radius:14px; border:none;
+    background:linear-gradient(180deg,#f6c85a,var(--gold));
+    color:#241a06; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:16px;
+    cursor:pointer; letter-spacing:.01em;
+    box-shadow:0 10px 24px -8px #f0b93a66;
+    transition:transform .1s, opacity .15s;
+  }
+  .start-btn:disabled{opacity:.35; cursor:not-allowed; box-shadow:none;}
+  .start-btn:not(:disabled):hover{transform:translateY(-1px);}
+  .start-btn:not(:disabled):active{transform:translateY(0px) scale(.99);}
+
+  /* ---------- Game card ---------- */
+  .game-card{
+    background:linear-gradient(180deg,var(--panel),#181b26);
+    border:1px solid #2c2f3d;
+    border-radius:var(--radius);
+    padding:20px;
+    box-shadow:0 20px 60px -20px #000a;
+  }
+  .game-header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:16px; gap:10px;
+  }
+  .icon-btn{
+    width:38px; height:38px; border-radius:10px; border:1.5px solid #2c2f3d;
+    background:#161822; color:var(--text); font-size:16px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    transition:.15s;
+  }
+  .icon-btn:hover{border-color:var(--gold); color:var(--gold);}
+  .status{
+    flex:1; text-align:center; font-family:'Space Grotesk',sans-serif; font-weight:600;
+    font-size:15px; padding:9px 10px; border-radius:10px; background:#161822;
+    border:1.5px solid #2c2f3d; transition:background .25s, border-color .25s, color .25s;
+  }
+  .status.turn-human{border-color:var(--gold); color:var(--gold);}
+  .status.turn-ai{color:var(--muted);}
+  .status.win-human{border-color:var(--teal); color:var(--teal); background:#123531;}
+  .status.win-ai{border-color:var(--red); color:#ffb59c; background:#3a1f14;}
+  .status.draw{border-color:var(--muted-2); color:var(--text);}
+  .thinking-dots{display:inline-flex; gap:3px; margin-left:2px; vertical-align:middle;}
+  .thinking-dots span{
+    width:4px; height:4px; border-radius:50%; background:currentColor;
+    opacity:.25; animation:dotPulse 1.1s ease-in-out infinite;
+  }
+  .thinking-dots span:nth-child(2){animation-delay:.15s;}
+  .thinking-dots span:nth-child(3){animation-delay:.3s;}
+  @keyframes dotPulse{ 0%,80%,100%{opacity:.25; transform:scale(.8);} 40%{opacity:1; transform:scale(1);} }
+
+  .meta-row{display:flex; justify-content:center; gap:8px; margin-bottom:14px;}
+  .badge{
+    font-size:11.5px; padding:4px 10px; border-radius:999px; background:#161822;
+    border:1px solid #2c2f3d; color:var(--muted); font-family:'Space Mono',monospace;
+  }
+  .badge.diff-easy{border-color:#1fb8ad55; color:var(--teal);}
+  .badge.diff-medium{border-color:#f0b93a55; color:var(--gold);}
+  .badge.diff-hard{border-color:#e4572e55; color:#ff9a76;}
+
+  .board-wrap{
+    background:linear-gradient(160deg,var(--wood-1),var(--wood-2));
+    border-radius:14px; padding:12px;
+    border:1px solid var(--wood-edge);
+    box-shadow:inset 0 2px 10px #00000066, 0 10px 30px -12px #000a;
+    transition:box-shadow .3s, border-color .3s;
+  }
+  .board-wrap.win-human{border-color:var(--teal); box-shadow:inset 0 2px 10px #00000066, 0 10px 30px -12px #000a, 0 0 0 1px var(--teal), 0 0 26px -4px #1fb8ad77;}
+  .board-wrap.win-ai{border-color:var(--red); box-shadow:inset 0 2px 10px #00000066, 0 10px 30px -12px #000a, 0 0 0 1px var(--red), 0 0 26px -4px #e4572e77;}
+  .board{
+    display:grid;
+    grid-template-columns:repeat(var(--cols),1fr);
+    grid-template-rows:repeat(var(--rows),1fr);
+    gap:6px;
+    width:100%;
+    aspect-ratio:var(--cols)/var(--rows);
+  }
+  .cell{
+    position:relative; padding:0; border:none; background:transparent; cursor:pointer;
+  }
+  .board.gravity .cell{cursor:pointer;}
+  .hole{
+    position:absolute; inset:6%;
+    border-radius:50%;
+    background:radial-gradient(circle at 40% 35%, #00000000 55%, #00000055 100%), #17110c;
+    box-shadow:inset 0 3px 6px #00000090, inset 0 -1px 2px #ffffff10;
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+  }
+  .cell.col-hover .hole{box-shadow:inset 0 3px 6px #00000090, 0 0 0 2px var(--turn-accent, var(--gold-soft)); background-color:#1d160f;}
+  .cell.cell-hover .hole{box-shadow:inset 0 3px 6px #00000090, 0 0 0 2px var(--gold-soft); background-color:#1d160f;}
+  .disc{position:absolute; inset:9%; width:auto; height:auto;}
+  .ghost-disc{
+    opacity:.4; box-shadow:none !important; animation:none !important;
+    border:2px dashed currentColor; pointer-events:none;
+  }
+  .ghost-disc.disc-red{background:radial-gradient(circle at 35% 30%,#ff8a5c44,#e4572e2e 55%,#a83c1e22); color:var(--red);}
+  .ghost-disc.disc-teal{background:radial-gradient(circle at 35% 30%,#6fe8de44,#1fb8ad2e 55%,#1370682e); color:var(--teal);}
+  .drop-anim{animation:dropBounce .32s cubic-bezier(.3,.9,.4,1.1);}
+  @keyframes dropBounce{
+    0%{transform:translateY(-260%); opacity:0;}
+    70%{transform:translateY(8%); opacity:1;}
+    100%{transform:translateY(0); opacity:1;}
+  }
+  .pop-anim{animation:popIn .18s ease-out;}
+  @keyframes popIn{ from{transform:scale(.25); opacity:0;} to{transform:scale(1); opacity:1;} }
+  .disc.win-cell{
+    animation:winPulse 1s ease-in-out infinite;
+    box-shadow:0 0 0 3px var(--gold), 0 0 18px 4px #f0b93a99, inset 0 3px 6px #ffffff55, inset 0 -4px 8px #00000055;
+    z-index:2;
+  }
+  @keyframes winPulse{ 0%,100%{transform:scale(1);} 50%{transform:scale(1.08);} }
+
+  .legend{display:flex; justify-content:center; gap:22px; margin-top:14px; font-size:13px; color:var(--muted);}
+
+  .footnote{text-align:center; color:var(--muted-2); font-size:12px; margin-top:18px; line-height:1.5;}
+
+  [hidden]{display:none !important;}
+
+  @media (max-width:420px){
+    .brand h1{font-size:24px;}
+    .choice-title{font-size:14.5px;}
+    .setup-card{padding:24px 18px;}
+  }
+</style>
+</head>
+<body>
+<div class="ambient-blob blob-a"></div>
+<div class="ambient-blob blob-b"></div>
+<div class="wrap">
+
+  <div class="setup-card" id="setupCard">
+    <div class="brand">
+      <span class="brand-mark"><span></span><span></span><span></span><span></span></span>
+      <h1>Row Games</h1>
+      <p class="tagline">Connect 4 or 5-in-a-row — pick your board, your difficulty, your color.</p>
+    </div>
+
+    <div class="field">
+      <h2>Choose your board</h2>
+      <div class="choice-grid" id="gameChoice">
+        <button class="choice-card" data-game="connect4" type="button">
+          <span class="choice-title">4 in a Row</span>
+          <span class="choice-meta">7 × 6 · drop into a column</span>
+        </button>
+        <button class="choice-card" data-game="five" type="button">
+          <span class="choice-title">5 in a Row</span>
+          <span class="choice-meta">9 × 7 · drop into a column</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="field">
+      <h2>Choose your difficulty</h2>
+      <div class="segmented" id="diffChoice">
+        <button data-diff="easy" type="button">Easy</button>
+        <button data-diff="medium" type="button">Medium</button>
+        <button data-diff="hard" type="button">Hard</button>
+      </div>
+      <p class="hint" id="diffHint">&nbsp;</p>
+    </div>
+
+    <div class="field">
+      <h2>Choose your color</h2>
+      <div class="choice-grid" id="colorChoice">
+        <button class="choice-card color-card" data-color="1" type="button">
+          <span class="disc disc-red"></span>
+          <div><span class="choice-title">Red</span><span class="choice-meta">You go first</span></div>
+        </button>
+        <button class="choice-card color-card" data-color="2" type="button">
+          <span class="disc disc-teal"></span>
+          <div><span class="choice-title">Teal</span><span class="choice-meta">AI goes first</span></div>
+        </button>
+      </div>
+    </div>
+
+    <button class="start-btn" id="startBtn" type="button" disabled>Start Game</button>
+    <p class="footnote">Red always moves first — your color decides who that is.</p>
+  </div>
+
+  <div class="game-card" id="gameCard" hidden>
+    <div class="game-header">
+      <button class="icon-btn" id="backBtn" title="Change settings" type="button">←</button>
+      <div class="status" id="statusText">—</div>
+      <button class="icon-btn" id="restartBtn" title="Restart" type="button">⟳</button>
+    </div>
+    <div class="meta-row">
+      <span class="badge" id="gameBadge"></span>
+      <span class="badge" id="diffBadge"></span>
+    </div>
+    <div class="board-wrap">
+      <div class="board" id="board"></div>
+    </div>
+    <div class="legend">
+      <span><span class="disc small disc-red"></span>Red</span>
+      <span><span class="disc small disc-teal"></span>Teal</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const GAME_DEFS = {
+    connect4: { rows:6, cols:7, winLen:4, gravity:true, label:'4 in a Row', badge:'7×6' },
+    five:     { rows:7, cols:9, winLen:5, gravity:true, label:'5 in a Row', badge:'9×7' }
+  };
+  const COLORS = { 1:{name:'Red', cls:'disc-red'}, 2:{name:'Teal', cls:'disc-teal'} };
+  const DIFF_LABEL = { easy:'Easy', medium:'Medium', hard:'Hard' };
+  const DIFF_HINTS = {
+    easy:'Casual — makes random moves.',
+    medium:'Balanced — blocks threats and thinks ahead.',
+    hard:'Expert — Connect 4 plays perfectly (unbeatable). 5-in-a-row uses forced-win/combination search plus deep lookahead — extremely hard to beat.'
+  };
+  const WIN_SCORE = 1000000;
+  const DIRS = [[0,1],[1,0],[1,1],[1,-1]];
+
+  // ---------------- Board helpers ----------------
+  function inBounds(def,r,c){ return r>=0 && r<def.rows && c>=0 && c<def.cols; }
+
+  function checkWin(board, def, row, col, player){
+    for(const [dr,dc] of DIRS){
+      const cells=[[row,col]];
+      let r=row+dr,c=col+dc;
+      while(inBounds(def,r,c) && board[r][c]===player){ cells.push([r,c]); r+=dr; c+=dc; }
+      r=row-dr; c=col-dc;
+      while(inBounds(def,r,c) && board[r][c]===player){ cells.push([r,c]); r-=dr; c-=dc; }
+      if(cells.length>=def.winLen) return cells;
+    }
+    return null;
+  }
+  function isBoardFull(board){ return board.every(row=>row.every(v=>v!==0)); }
+  function countEmptyCells(board){
+    let n=0;
+    for(const row of board) for(const v of row) if(v===0) n++;
+    return n;
+  }
+
+  function lowestEmptyRow(board, col){
+    for(let r=board.length-1;r>=0;r--){ if(board[r][col]===0) return r; }
+    return -1;
+  }
+  function getAllMoves(board, def){
+    const moves=[];
+    if(def.gravity){
+      for(let c=0;c<def.cols;c++){
+        const r=lowestEmptyRow(board,c);
+        if(r!==-1) moves.push({row:r,col:c});
+      }
+    } else {
+      for(let r=0;r<def.rows;r++) for(let c=0;c<def.cols;c++) if(board[r][c]===0) moves.push({row:r,col:c});
+    }
+    return moves;
+  }
+  function getCandidateMoves(board, def){
+    if(def.gravity) return getAllMoves(board, def);
+    const hasStone = board.some(row=>row.some(v=>v!==0));
+    if(!hasStone) return [{row:Math.floor(def.rows/2), col:Math.floor(def.cols/2)}];
+    const moves = getAllMoves(board, def);
+    return moves.filter(({row,col})=>{
+      for(let dr=-2;dr<=2;dr++) for(let dc=-2;dc<=2;dc++){
+        const rr=row+dr, cc=col+dc;
+        if(inBounds(def,rr,cc) && board[rr][cc]!==0) return true;
+      }
+      return false;
+    });
+  }
+  function orderMovesConnect4(moves, def){
+    const centerCol=(def.cols-1)/2;
+    return moves.slice().sort((a,b)=>Math.abs(a.col-centerCol)-Math.abs(b.col-centerCol));
+  }
+  // Order moves by a quick static evaluation so alpha-beta cuts off far more branches —
+  // critical for pushing search depth further within the same time budget.
+  function orderMovesByHeuristic(moves, board, def, current, opponent){
+    return moves.map(m=>{
+      board[m.row][m.col]=current;
+      const s = evaluate(board, def, current, opponent);
+      board[m.row][m.col]=0;
+      return {m, s};
+    }).sort((a,b)=>b.s-a.s).map(x=>x.m);
+  }
+
+  function findWinningMove(board, def, player){
+    const moves = getAllMoves(board, def);
+    for(const m of moves){
+      board[m.row][m.col]=player;
+      const win = checkWin(board, def, m.row, m.col, player);
+      board[m.row][m.col]=0;
+      if(win) return m;
+    }
+    return null;
+  }
+
+  // ---------------- Heuristic evaluation ----------------
+  // Pattern-based scoring: a run of stones is worth far more when both ends beyond the
+  // window are still open (it can grow into a live four/five) than when it's boxed in.
+  const PATTERN_BASE = [0, 2, 22, 180, 2600];      // indexed by stone count within a window
+  const OPEN_MULT    = [0.28, 1, 2.3];              // indexed by # of open ends (0,1,2) outside the window
+  function patternScore(count, openEnds){
+    if(count>=5) return WIN_SCORE;
+    return PATTERN_BASE[count] * OPEN_MULT[openEnds];
+  }
+  function evaluate(board, def, current, opponent){
+    let score=0;
+    const {rows,cols,winLen}=def;
+    function collect(r,c,dr,dc){
+      const cells=[];
+      for(let k=0;k<winLen;k++) cells.push(board[r+dr*k][c+dc*k]);
+      return cells;
+    }
+    function edgeVal(r,c){
+      if(r<0||r>=rows||c<0||c>=cols) return -1; // off-board counts as blocked
+      return board[r][c];
+    }
+    const lineDefs=[];
+    for(let r=0;r<rows;r++) for(let c=0;c<=cols-winLen;c++) lineDefs.push([r,c,0,1]);
+    for(let c=0;c<cols;c++) for(let r=0;r<=rows-winLen;r++) lineDefs.push([r,c,1,0]);
+    for(let r=0;r<=rows-winLen;r++) for(let c=0;c<=cols-winLen;c++) lineDefs.push([r,c,1,1]);
+    for(let r=0;r<=rows-winLen;r++) for(let c=winLen-1;c<cols;c++) lineDefs.push([r,c,1,-1]);
+
+    for(const [r,c,dr,dc] of lineDefs){
+      const cells = collect(r,c,dr,dc);
+      let curCount=0, oppCount=0;
+      for(const v of cells){ if(v===current) curCount++; else if(v===opponent) oppCount++; }
+      if(curCount>0 && oppCount>0) continue;
+      if(curCount===0 && oppCount===0) continue;
+      const beforeV = edgeVal(r-dr, c-dc);
+      const afterV = edgeVal(r+dr*winLen, c+dc*winLen);
+      const openEnds = (beforeV===0?1:0) + (afterV===0?1:0);
+      if(curCount>0) score += patternScore(curCount, openEnds);
+      else score -= patternScore(oppCount, openEnds) * 1.05;
+    }
+    if(def.gravity){
+      const centerCol=Math.floor(cols/2);
+      for(let r=0;r<rows;r++){
+        if(board[r][centerCol]===current) score+=3;
+        else if(board[r][centerCol]===opponent) score-=3;
+      }
+    }
+    return score;
+  }
+
+  // ---------------- Forced-win (fork) detection ----------------
+  // Counts how many distinct cells would immediately complete a win for `player`.
+  function countImmediateWinCells(board, def, player){
+    let count=0;
+    for(const m of getAllMoves(board, def)){
+      board[m.row][m.col]=player;
+      const win = checkWin(board, def, m.row, m.col, player);
+      board[m.row][m.col]=0;
+      if(win) count++;
+    }
+    return count;
+  }
+  // A move that leaves the player with 2+ simultaneous winning follow-ups can't be blocked
+  // in one reply — that's a forced win. Finding these lets the AI play combinations a plain
+  // fixed-depth search would often miss (and lets it recognise when it must prevent one).
+  function findForkMove(board, def, player){
+    for(const m of getCandidateMoves(board, def)){
+      if(board[m.row][m.col]!==0) continue;
+      board[m.row][m.col]=player;
+      const immediateWin = checkWin(board, def, m.row, m.col, player);
+      let wins = 0;
+      if(!immediateWin) wins = countImmediateWinCells(board, def, player);
+      board[m.row][m.col]=0;
+      if(!immediateWin && wins>=2) return m;
+    }
+    return null;
+  }
+  // Try to find an AI move that neutralizes an opponent fork threat (occupying the shared
+  // cell, or otherwise reducing the opponent's follow-up wins below 2) without handing the
+  // opponent an immediate win of their own.
+  function blockForkMove(board, def, aiPlayer, humanPlayer){
+    for(const m of getCandidateMoves(board, def)){
+      if(board[m.row][m.col]!==0) continue;
+      board[m.row][m.col]=aiPlayer;
+      const aiWin = checkWin(board, def, m.row, m.col, aiPlayer);
+      let stillForked=false, humanImmediateWin=false;
+      if(!aiWin){
+        humanImmediateWin = countImmediateWinCells(board, def, humanPlayer) >= 1 &&
+          (function(){ const w=findWinningMove(board, def, humanPlayer); return !!w; })();
+        if(!humanImmediateWin) stillForked = !!findForkMove(board, def, humanPlayer);
+      }
+      board[m.row][m.col]=0;
+      if(aiWin) return m;
+      if(!humanImmediateWin && !stillForked) return m;
+    }
+    return null;
+  }
+
+  // Multi-ply forced-win ("threat space") search. A single-ply fork is a move that creates
+  // two simultaneous winning threats at once. This generalizes that idea across several of
+  // the player's own moves: at each step, either win outright, create a fork (unstoppable),
+  // or create exactly one threat that forces a specific reply — occupy that reply and keep
+  // hunting. This finds forced combinations that a fixed-depth minimax often misses, and is
+  // the main reason the hard AI can spot "no matter what you do, I still win in N moves".
+  function findForcedWinMove(board, def, player, opponent, maxDepth, timeLimit){
+    const start = performance.now();
+    function search(depth){
+      if(performance.now()-start > timeLimit) return null;
+      const winNow = findWinningMove(board, def, player);
+      if(winNow) return winNow;
+      if(depth<=0) return null;
+      for(const cand of getCandidateMoves(board, def)){
+        if(board[cand.row][cand.col]!==0) continue;
+        board[cand.row][cand.col] = player;
+        const threats = countImmediateWinCells(board, def, player);
+        if(threats>=2){
+          board[cand.row][cand.col]=0;
+          return cand; // unstoppable fork — opponent can only block one
+        }
+        if(threats===1){
+          const blockCell = findWinningMove(board, def, player);
+          if(blockCell){
+            board[blockCell.row][blockCell.col] = opponent;
+            const oppWinsThere = checkWin(board, def, blockCell.row, blockCell.col, opponent);
+            let works=false;
+            if(!oppWinsThere){
+              works = !!search(depth-1);
+            }
+            board[blockCell.row][blockCell.col]=0;
+            if(works){ board[cand.row][cand.col]=0; return cand; }
+          }
+        }
+        board[cand.row][cand.col]=0;
+      }
+      return null;
+    }
+    return search(maxDepth);
+  }
+
+  // ---------------- Negamax with alpha-beta ----------------
+  function negamax(board, def, depth, alpha, beta, current, opponent, start, timeLimit){
+    if(performance.now()-start > timeLimit) return {timeout:true, score:0};
+    if(depth===0) return {score: evaluate(board, def, current, opponent)};
+    const moves = getCandidateMoves(board, def);
+    if(moves.length===0) return {score:0};
+    const ordered = def.gravity ? orderMovesConnect4(moves, def)
+      : (depth>=2 ? orderMovesByHeuristic(moves, board, def, current, opponent) : moves);
+    let best=-Infinity;
+    for(const move of ordered){
+      board[move.row][move.col]=current;
+      const win = checkWin(board, def, move.row, move.col, current);
+      let val;
+      if(win){
+        val = WIN_SCORE + depth;
+      } else if(isBoardFull(board)){
+        val = 0;
+      } else {
+        const res = negamax(board, def, depth-1, -beta, -alpha, opponent, current, start, timeLimit);
+        if(res.timeout){ board[move.row][move.col]=0; return {timeout:true, score:0}; }
+        val = -res.score;
+      }
+      board[move.row][move.col]=0;
+      if(val>best) best=val;
+      if(best>alpha) alpha=best;
+      if(alpha>=beta) break;
+    }
+    return {score:best};
+  }
+
+  function minimaxBestMove(board, def, aiPlayer, humanPlayer, maxDepth, timeLimit){
+    const start = performance.now();
+    let candidates = getCandidateMoves(board, def);
+    if(def.gravity) candidates = orderMovesConnect4(candidates, def);
+    else candidates = orderMovesByHeuristic(candidates, board, def, aiPlayer, humanPlayer);
+    if(candidates.length===0) return null;
+    if(candidates.length===1) return candidates[0];
+
+    let bestMove = candidates[0];
+    for(let depth=1; depth<=maxDepth; depth++){
+      let alpha=-Infinity, beta=Infinity;
+      let localBest=null, localBestScore=-Infinity, timedOut=false;
+      for(const move of candidates){
+        if(performance.now()-start > timeLimit){ timedOut=true; break; }
+        board[move.row][move.col]=aiPlayer;
+        const win = checkWin(board, def, move.row, move.col, aiPlayer);
+        let val;
+        if(win){
+          val = WIN_SCORE + depth;
+        } else if(isBoardFull(board)){
+          val = 0;
+        } else {
+          const res = negamax(board, def, depth-1, -beta, -alpha, humanPlayer, aiPlayer, start, timeLimit);
+          if(res.timeout){ board[move.row][move.col]=0; timedOut=true; break; }
+          val = -res.score;
+        }
+        board[move.row][move.col]=0;
+        if(val>localBestScore){ localBestScore=val; localBest=move; }
+        if(val>alpha) alpha=val;
+      }
+      if(localBest){
+        bestMove = localBest;
+        candidates = [bestMove, ...candidates.filter(c=>!(c.row===bestMove.row && c.col===bestMove.col))];
+      }
+      if(timedOut) break;
+      if(localBestScore >= WIN_SCORE) break;
+    }
+    return bestMove;
+  }
+
+  // ---------------- Connect 4 bitboard solver (exact/near-exact, with transposition table) ----------------
+  // Standard bitboard scheme (Pascal Pons' "How to solve Connect 4"): each column packed into
+  // HEIGHT+1 bits with a sentinel top bit, so all bitwise ops stay well-defined and cheap.
+  const C4_WIDTH=7, C4_HEIGHT=6, C4_H1=C4_HEIGHT+1;
+  const C4_COLUMN_ORDER=[3,2,4,1,5,0,6]; // center-out, matches known-strong move ordering
+  const C4_EXACT=0, C4_LOWER=1, C4_UPPER=2;
+
+  function c4BottomMask(col){ return 1n << BigInt(col*C4_H1); }
+  function c4TopMask(col){ return 1n << BigInt(col*C4_H1 + C4_HEIGHT - 1); }
+  function c4ColumnMask(col){ return ((1n<<BigInt(C4_HEIGHT))-1n) << BigInt(col*C4_H1); }
+  function c4CanPlay(mask,col){ return (mask & c4TopMask(col)) === 0n; }
+  function c4MoveBit(mask,col){ return (mask + c4BottomMask(col)) & c4ColumnMask(col); }
+  function c4Alignment(pos){
+    let m = pos & (pos >> BigInt(C4_H1));
+    if((m & (m >> BigInt(2*C4_H1))) !== 0n) return true;
+    m = pos & (pos >> BigInt(C4_HEIGHT));
+    if((m & (m >> BigInt(2*C4_HEIGHT))) !== 0n) return true;
+    m = pos & (pos >> BigInt(C4_HEIGHT+2));
+    if((m & (m >> BigInt(2*(C4_HEIGHT+2)))) !== 0n) return true;
+    m = pos & (pos >> 1n);
+    if((m & (m >> 2n)) !== 0n) return true;
+    return false;
+  }
+  function c4IsWinningMove(position,mask,col){ return c4Alignment(position | c4MoveBit(mask,col)); }
+  function c4Play(position,mask,col){
+    const moveBit = c4MoveBit(mask,col);
+    const newPosition = position ^ mask;
+    const newMask = mask | moveBit;
+    return [newPosition,newMask];
+  }
+  // Precomputed winning-line bitmasks (69 of them for a 7x6 board) so the heuristic never
+  // has to rebuild an array or re-derive line geometry inside the hot search loop.
+  function c4BitIndex(r,c){ return c*C4_H1 + (C4_HEIGHT-1-r); }
+  const C4_LINES = (function(){
+    const lines=[];
+    const R=C4_HEIGHT, C=C4_WIDTH, L=4;
+    function addLine(r,c,dr,dc){
+      let m=0n;
+      for(let k=0;k<L;k++) m |= 1n << BigInt(c4BitIndex(r+dr*k, c+dc*k));
+      lines.push(m);
+    }
+    for(let r=0;r<R;r++) for(let c=0;c<=C-L;c++) addLine(r,c,0,1);
+    for(let c=0;c<C;c++) for(let r=0;r<=R-L;r++) addLine(r,c,1,0);
+    for(let r=0;r<=R-L;r++) for(let c=0;c<=C-L;c++) addLine(r,c,1,1);
+    for(let r=0;r<=R-L;r++) for(let c=L-1;c<C;c++) addLine(r,c,1,-1);
+    return lines;
+  })();
+  const C4_CENTER_MASK = c4ColumnMask(3);
+  function popcount(n){ let c=0; while(n){ n &= (n-1n); c++; } return c; }
+  function c4HeuristicFast(position, mask){
+    // position = stones of the player about to move at this node; mask = all stones.
+    const oppPosition = mask ^ position;
+    let score=0;
+    for(const lineMask of C4_LINES){
+      const curBits = position & lineMask;
+      const oppBits = oppPosition & lineMask;
+      if(curBits!==0n && oppBits!==0n) continue;
+      if(curBits!==0n){ const n=popcount(curBits); score += n*n*n*4; }
+      else if(oppBits!==0n){ const n=popcount(oppBits); score -= n*n*n*4.4; }
+    }
+    score += popcount(position & C4_CENTER_MASK)*3;
+    score -= popcount(oppPosition & C4_CENTER_MASK)*3;
+    return score;
+  }
+  function c4OrderMoves(position, mask, cols){
+    return cols.map(col=>{
+      const [np,nm]=c4Play(position,mask,col);
+      return {col, h:-c4HeuristicFast(np,nm)};
+    }).sort((a,b)=>b.h-a.h).map(x=>x.col);
+  }
+  function c4Negamax(position, mask, depth, alpha, beta, movesLeft, start, timeLimit, tt){
+    if(performance.now()-start > timeLimit) return {timeout:true};
+    if(movesLeft===0) return {score:0};
+    for(const col of C4_COLUMN_ORDER){
+      if(c4CanPlay(mask,col) && c4IsWinningMove(position,mask,col)) return {score: WIN_SCORE + movesLeft};
+    }
+    const key = position+mask;
+    const originalAlpha=alpha, originalBeta=beta;
+    const entry = tt.get(key);
+    if(entry && entry.depth>=depth){
+      if(entry.flag===C4_EXACT) return {score:entry.value};
+      if(entry.flag===C4_LOWER && entry.value>alpha) alpha=entry.value;
+      else if(entry.flag===C4_UPPER && entry.value<beta) beta=entry.value;
+      if(alpha>=beta) return {score:entry.value};
+    }
+    if(depth===0) return {score:c4HeuristicFast(position,mask)};
+    let bestScore=-Infinity;
+    const legalCols = C4_COLUMN_ORDER.filter(col=>c4CanPlay(mask,col));
+    const orderedCols = depth>=3 ? c4OrderMoves(position,mask,legalCols) : legalCols;
+    for(const col of orderedCols){
+      const [childPos,childMask]=c4Play(position,mask,col);
+      const res=c4Negamax(childPos,childMask,depth-1,-beta,-alpha,movesLeft-1,start,timeLimit,tt);
+      if(res.timeout) return {timeout:true};
+      const val=-res.score;
+      if(val>bestScore) bestScore=val;
+      if(bestScore>alpha) alpha=bestScore;
+      if(alpha>=beta) break;
+    }
+    let flag;
+    if(bestScore<=originalAlpha) flag=C4_UPPER;
+    else if(bestScore>=originalBeta) flag=C4_LOWER;
+    else flag=C4_EXACT;
+    tt.set(key,{depth,flag,value:bestScore});
+    return {score:bestScore};
+  }
+  function c4FindBestMove(position, mask, movesLeft){
+    const start=performance.now();
+    const timeLimit=2000;
+    const tt=new Map();
+    let candidates = C4_COLUMN_ORDER.filter(col=>c4CanPlay(mask,col));
+    if(candidates.length===0) return null;
+    if(candidates.length===1) return candidates[0];
+    for(const col of candidates){
+      if(c4IsWinningMove(position,mask,col)) return col;
+    }
+    candidates = c4OrderMoves(position, mask, candidates);
+    let bestCol = candidates[0];
+    const maxDepth = movesLeft;
+    for(let depth=1; depth<=maxDepth; depth++){
+      let alpha=-Infinity, beta=Infinity;
+      let localBest=null, localBestScore=-Infinity, timedOut=false;
+      for(const col of candidates){
+        if(performance.now()-start>timeLimit){ timedOut=true; break; }
+        const [childPos,childMask]=c4Play(position,mask,col);
+        const res=c4Negamax(childPos,childMask,depth-1,-beta,-alpha,movesLeft-1,start,timeLimit,tt);
+        if(res.timeout){ timedOut=true; break; }
+        const val=-res.score;
+        if(val>localBestScore){ localBestScore=val; localBest=col; }
+        if(val>alpha) alpha=val;
+      }
+      if(timedOut) break;
+      bestCol = localBest;
+      candidates = [bestCol, ...candidates.filter(c=>c!==bestCol)];
+      if(localBestScore>=WIN_SCORE) break;
+    }
+    return bestCol;
+  }
+  function boardToC4Bitboard(board, aiPlayer){
+    let position=0n, mask=0n;
+    for(let r=0;r<C4_HEIGHT;r++){
+      for(let c=0;c<C4_WIDTH;c++){
+        const val=board[r][c];
+        if(val===0) continue;
+        const rb=C4_HEIGHT-1-r;
+        const bit=1n<<BigInt(c*C4_H1+rb);
+        mask|=bit;
+        if(val===aiPlayer) position|=bit;
+      }
+    }
+    return {position,mask};
+  }
+  function hardMoveConnect4(board, aiPlayer, humanPlayer){
+    const def = GAME_DEFS.connect4;
+    const emptyCount = countEmptyCells(board);
+    if(emptyCount === C4_WIDTH*C4_HEIGHT){
+      return {row: lowestEmptyRow(board,3), col:3}; // known-optimal opening move
+    }
+    if(emptyCount === C4_WIDTH*C4_HEIGHT-1 && board[C4_HEIGHT-1][3]!==0 && board[C4_HEIGHT-1][3]!==aiPlayer){
+      // Sole piece on the board is the opponent's center opener — stacking on center is the
+      // well-documented optimal reply, so skip the (expensive) 41-ply search for it.
+      return {row: lowestEmptyRow(board,3), col:3};
+    }
+    const {position,mask} = boardToC4Bitboard(board, aiPlayer);
+    const bestCol = c4FindBestMove(position, mask, emptyCount);
+    if(bestCol===null) return null;
+    return {row: lowestEmptyRow(board,bestCol), col:bestCol};
+  }
+
+  // ---------------- AI difficulty tiers ----------------
+  function easyMove(board, def){
+    const moves = getAllMoves(board, def);
+    return moves[Math.floor(Math.random()*moves.length)];
+  }
+  function mediumMove(board, def, aiPlayer, humanPlayer){
+    let m = findWinningMove(board, def, aiPlayer); if(m) return m;
+    m = findWinningMove(board, def, humanPlayer); if(m) return m;
+    if(Math.random()<0.18){
+      const moves = getCandidateMoves(board, def);
+      return moves[Math.floor(Math.random()*moves.length)];
+    }
+    return minimaxBestMove(board, def, aiPlayer, humanPlayer, 2, 500);
+  }
+  // ---------------- Strong 5-in-a-row AI ----------------
+  // The 5-in-a-row Hard bot uses tactical threat search first, then iterative
+  // alpha-beta search with a transposition table. Connect 4 keeps its own exact solver.
+  const FIVE_TT_MAX = 120000;
+  const FIVE_TIME_LIMIT = 1800;
+
+  function fiveBoardKey(board, current, opponent){
+    let key = current + ':' + opponent + '|';
+    for(const row of board) key += row.join('');
+    return key;
+  }
+
+  function fiveWinningMoves(board, def, player){
+    const wins=[];
+    for(const m of getAllMoves(board, def)){
+      board[m.row][m.col]=player;
+      const win=checkWin(board,def,m.row,m.col,player);
+      board[m.row][m.col]=0;
+      if(win) wins.push(m);
+    }
+    return wins;
+  }
+
+  function fiveImmediateBlock(board, def, player){
+    const wins=fiveWinningMoves(board,def,player);
+    return wins.length ? wins[0] : null;
+  }
+
+  // Evaluate every contiguous run rather than only fixed windows. This lets the
+  // bot recognize open/broken fours and dangerous threes much more reliably.
+  function evaluateFiveStrong(board, def, current, opponent){
+    const rows=def.rows, cols=def.cols, L=def.winLen;
+    let score=0;
+    const weights={
+      1: 2,
+      2: 18,
+      3: 180,
+      4: 12000,
+      5: WIN_SCORE
+    };
+
+    function value(count, open, blockedGap=false){
+      if(count>=L) return WIN_SCORE;
+      if(open===2){
+        if(count===4) return 90000;
+        if(count===3) return blockedGap ? 900 : 2600;
+        if(count===2) return 70;
+        return 5;
+      }
+      if(open===1){
+        if(count===4) return 18000;
+        if(count===3) return 420;
+        if(count===2) return 28;
+        return 2;
+      }
+      return weights[count] * 0.08;
+    }
+
+    // Score all windows, with extra weight for windows containing only one side.
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+      for(const [dr,dc] of DIRS){
+        const er=r+(L-1)*dr, ec=c+(L-1)*dc;
+        if(!inBounds(def,er,ec)) continue;
+        let a=0,b=0,empty=0;
+        for(let k=0;k<L;k++){
+          const v=board[r+dr*k][c+dc*k];
+          if(v===current)a++; else if(v===opponent)b++; else empty++;
+        }
+        if(a && b) continue;
+        const br=r-dr,bc=c-dc, ar=er+dr,ac=ec+dc;
+        const open=(inBounds(def,br,bc)&&board[br][bc]===0?1:0)+
+                   (inBounds(def,ar,ac)&&board[ar][ac]===0?1:0);
+        if(a) score+=value(a,open);
+        else if(b) score-=value(b,open)*1.08;
+      }
+    }
+
+    // Broken-three / broken-four detection: one empty inside a run with both
+    // ends available is often more important than a simple count of stones.
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) for(const [dr,dc] of DIRS){
+      const len=7;
+      const er=r+(len-1)*dr, ec=c+(len-1)*dc;
+      if(!inBounds(def,er,ec)) continue;
+      for(const player of [current,opponent]){
+        const other=player===current?opponent:current;
+        let cells=[];
+        for(let k=0;k<len;k++) cells.push(board[r+dr*k][c+dc*k]);
+        if(cells.includes(other)) continue;
+        const stones=cells.filter(v=>v===player).length;
+        const empties=cells.filter(v=>v===0).length;
+        if(empties!==2 || stones<3) continue;
+        // Treat two empty cells as a strong tactical pattern when both can be
+        // filled to produce winning/near-winning continuations.
+        const empt=cells.map((v,k)=>v===0?k:-1).filter(k=>k>=0);
+        let localThreats=0;
+        for(const k of empt){
+          const rr=r+dr*k, cc=c+dc*k;
+          board[rr][cc]=player;
+          if(checkWin(board,def,rr,cc,player)) localThreats++;
+          board[rr][cc]=0;
+        }
+        if(localThreats>=2) score+=(player===current?1:-1)*50000;
+        else if(stones>=3) score+=(player===current?1:-1)*900;
+      }
+    }
+
+    // Center control matters on a gravity board, but only modestly compared with threats.
+    const center=(cols-1)/2;
+    for(let r=0;r<rows;r++){
+      if(board[r][Math.floor(center)]===current) score+=7;
+      else if(board[r][Math.floor(center)]===opponent) score-=7;
+      if(center%1!==0){
+        if(board[r][Math.ceil(center)]===current) score+=4;
+        else if(board[r][Math.ceil(center)]===opponent) score-=4;
+      }
+    }
+    return score;
+  }
+
+  function fiveMoveOrder(board, def, moves, aiPlayer, humanPlayer){
+    return moves.map(m=>{
+      board[m.row][m.col]=aiPlayer;
+      let s=evaluateFiveStrong(board,def,aiPlayer,humanPlayer);
+      if(checkWin(board,def,m.row,m.col,aiPlayer)) s+=WIN_SCORE;
+      board[m.row][m.col]=0;
+      // Prefer center columns after tactical scoring.
+      s-=Math.abs(m.col-(def.cols-1)/2)*1.5;
+      return {m,s};
+    }).sort((a,b)=>b.s-a.s).map(x=>x.m);
+  }
+
+  function fiveSearch(board, def, depth, alpha, beta, current, opponent, start, tt){
+    if(performance.now()-start>FIVE_TIME_LIMIT) return {timeout:true};
+    const key=fiveBoardKey(board,current,opponent);
+    const cached=tt.get(key);
+    if(cached && cached.depth>=depth) return {score:cached.score};
+    if(depth===0) return {score:evaluateFiveStrong(board,def,current,opponent)};
+
+    const moves=getAllMoves(board,def);
+    if(!moves.length) return {score:0};
+
+    // Always resolve immediate wins and losses before heuristic searching.
+    const ownWins=fiveWinningMoves(board,def,current);
+    if(ownWins.length) return {score:WIN_SCORE+depth};
+    const oppWins=fiveWinningMoves(board,def,opponent);
+    if(oppWins.length>=2) return {score:-WIN_SCORE-depth};
+
+    const ordered=fiveMoveOrder(board,def,moves,current,opponent);
+    let best=-Infinity;
+    for(const m of ordered){
+      board[m.row][m.col]=current;
+      const win=checkWin(board,def,m.row,m.col,current);
+      let val;
+      if(win) val=WIN_SCORE+depth;
+      else {
+        const res=fiveSearch(board,def,depth-1,-beta,-alpha,opponent,current,start,tt);
+        if(res.timeout){board[m.row][m.col]=0;return {timeout:true};}
+        val=-res.score;
+      }
+      board[m.row][m.col]=0;
+      if(val>best) best=val;
+      if(best>alpha) alpha=best;
+      if(alpha>=beta) break;
+    }
+    if(tt.size<FIVE_TT_MAX) tt.set(key,{depth,score:best});
+    return {score:best};
+  }
+
+  function hardMoveFive(board,def,aiPlayer,humanPlayer){
+    const start=performance.now();
+    const tt=new Map();
+    const moves=getAllMoves(board,def);
+    if(!moves.length) return null;
+
+    // Tactical priority: win now, block a win, stop a double threat.
+    let wins=fiveWinningMoves(board,def,aiPlayer);
+    if(wins.length) return wins[0];
+    wins=fiveWinningMoves(board,def,humanPlayer);
+    if(wins.length) return wins[0];
+
+    // If the opponent has multiple winning columns, no single move can save the game.
+    // Otherwise force the opponent's reply whenever possible.
+    const ordered=fiveMoveOrder(board,def,moves,aiPlayer,humanPlayer);
+    let bestMove=ordered[0], bestScore=-Infinity;
+
+    // Iterative deepening: keep the last fully completed depth if the time budget expires.
+    for(let depth=1;depth<=9;depth++){
+      if(performance.now()-start>FIVE_TIME_LIMIT) break;
+      let localMove=bestMove, localScore=-Infinity, timedOut=false;
+      const rootMoves=fiveMoveOrder(board,def,ordered,aiPlayer,humanPlayer);
+      for(const m of rootMoves){
+        if(performance.now()-start>FIVE_TIME_LIMIT){timedOut=true;break;}
+        board[m.row][m.col]=aiPlayer;
+        let val;
+        if(checkWin(board,def,m.row,m.col,aiPlayer)) val=WIN_SCORE+depth;
+        else {
+          const res=fiveSearch(board,def,depth-1,-Infinity,Infinity,humanPlayer,aiPlayer,start,tt);
+          if(res.timeout){board[m.row][m.col]=0;timedOut=true;break;}
+          val=-res.score;
+        }
+        board[m.row][m.col]=0;
+        if(val>localScore){localScore=val;localMove=m;}
+      }
+      if(timedOut) break;
+      bestMove=localMove; bestScore=localScore;
+      if(bestScore>=WIN_SCORE) break;
+    }
+    return bestMove;
+  }
+
+  function hardMove(board, def, aiPlayer, humanPlayer){
+    if(def === GAME_DEFS.connect4){
+      return hardMoveConnect4(board, aiPlayer, humanPlayer);
+    }
+    return hardMoveFive(board, def, aiPlayer, humanPlayer);
+  }
+
+  // ---------------- UI / game state ----------------
+  let selGame=null, selDiff=null, selColor=null;
+  let state = null;
+
+  const setupCard=document.getElementById('setupCard');
+  const gameCard=document.getElementById('gameCard');
+  const boardEl=document.getElementById('board');
+  const statusEl=document.getElementById('statusText');
+  const gameBadge=document.getElementById('gameBadge');
+  const diffBadge=document.getElementById('diffBadge');
+  const boardWrapEl=document.querySelector('.board-wrap');
+
+  document.querySelectorAll('#gameChoice .choice-card').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#gameChoice .choice-card').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selGame = btn.dataset.game;
+      checkReady();
+    });
+  });
+  document.querySelectorAll('#diffChoice button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#diffChoice button').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selDiff = btn.dataset.diff;
+      document.getElementById('diffHint').textContent = DIFF_HINTS[selDiff];
+      checkReady();
+    });
+  });
+  document.querySelectorAll('#colorChoice .choice-card').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#colorChoice .choice-card').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selColor = parseInt(btn.dataset.color,10);
+      checkReady();
+    });
+  });
+  function checkReady(){
+    document.getElementById('startBtn').disabled = !(selGame && selDiff && selColor);
+  }
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.getElementById('backBtn').addEventListener('click', ()=>{ gameCard.hidden=true; setupCard.hidden=false; });
+  document.getElementById('restartBtn').addEventListener('click', startGame);
+
+  function startGame(){
+    const def = GAME_DEFS[selGame];
+    state = {
+      def, difficulty:selDiff, humanPlayer:selColor,
+      board: Array.from({length:def.rows},()=>Array(def.cols).fill(0)),
+      current:1, over:false, winner:null, draw:false, winCells:[], locked:false
+    };
+    setupCard.hidden=true; gameCard.hidden=false;
+    boardEl.style.setProperty('--turn-accent', state.humanPlayer===1 ? 'var(--red-soft)' : 'var(--teal-soft)');
+    boardWrapEl.className = 'board-wrap';
+    gameBadge.textContent = def.label + ' · ' + def.badge;
+    diffBadge.textContent = DIFF_LABEL[selDiff];
+    diffBadge.className = 'badge diff-' + selDiff;
+    buildBoardDOM();
+    updateStatus();
+    if(state.current !== state.humanPlayer){
+      state.locked=true;
+      setTimeout(aiTurn, 150);
+    }
+  }
+
+  function buildBoardDOM(){
+    boardEl.innerHTML='';
+    const {rows,cols,gravity}=state.def;
+    boardEl.style.setProperty('--cols',cols);
+    boardEl.style.setProperty('--rows',rows);
+    boardEl.classList.toggle('gravity', gravity);
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const cell=document.createElement('button');
+        cell.className='cell'; cell.type='button';
+        cell.dataset.row=r; cell.dataset.col=c;
+        const hole=document.createElement('span');
+        hole.className='hole';
+        cell.appendChild(hole);
+        cell.addEventListener('click', onCellClick);
+        if(gravity){
+          cell.addEventListener('mouseenter', ()=>{ highlightCol(c,true); showGhost(c); });
+          cell.addEventListener('mouseleave', ()=>{ highlightCol(c,false); hideGhost(); });
+        } else {
+          cell.addEventListener('mouseenter', ()=>{
+            if(state && !state.over && !state.locked && state.current===state.humanPlayer && state.board[r][c]===0){
+              cell.classList.add('cell-hover');
+            }
+          });
+          cell.addEventListener('mouseleave', ()=>cell.classList.remove('cell-hover'));
+        }
+        boardEl.appendChild(cell);
+      }
+    }
+  }
+  function highlightCol(c,on){
+    boardEl.querySelectorAll('.cell[data-col="'+c+'"]').forEach(el=>el.classList.toggle('col-hover',on));
+  }
+  function showGhost(col){
+    if(!state || state.over || state.locked || state.current!==state.humanPlayer) return;
+    const row = lowestEmptyRow(state.board, col);
+    if(row===-1) return;
+    const cell = cellEl(row,col);
+    if(!cell) return;
+    const hole = cell.querySelector('.hole');
+    if(!hole || hole.querySelector('.disc')) return;
+    const ghost=document.createElement('span');
+    ghost.className='disc ghost-disc '+COLORS[state.humanPlayer].cls;
+    hole.appendChild(ghost);
+  }
+  function hideGhost(){
+    boardEl.querySelectorAll('.ghost-disc').forEach(el=>el.remove());
+  }
+  function cellEl(row,col){
+    return boardEl.querySelector('.cell[data-row="'+row+'"][data-col="'+col+'"]');
+  }
+
+  function onCellClick(e){
+    if(!state || state.over || state.locked) return;
+    if(state.current !== state.humanPlayer) return;
+    const col=parseInt(e.currentTarget.dataset.col,10);
+    const row=parseInt(e.currentTarget.dataset.row,10);
+    let target;
+    if(state.def.gravity){
+      target=lowestEmptyRow(state.board,col);
+      if(target===-1) return;
+    } else {
+      if(state.board[row][col]!==0) return;
+      target=row;
+    }
+    makeMove(target,col,state.current);
+  }
+
+  function makeMove(row,col,player){
+    hideGhost();
+    state.board[row][col]=player;
+    renderPiece(row,col,player);
+    const win=checkWin(state.board, state.def, row, col, player);
+    if(win){
+      state.over=true; state.winner=player; state.winCells=win;
+      highlightWin(win);
+      updateStatus();
+      return;
+    }
+    if(isBoardFull(state.board)){
+      state.over=true; state.draw=true;
+      updateStatus();
+      return;
+    }
+    state.current = player===1?2:1;
+    updateStatus();
+    if(state.current !== state.humanPlayer){
+      state.locked=true;
+      setTimeout(aiTurn, 150);
+    }
+  }
+
+  function renderPiece(row,col,player){
+    const cell=cellEl(row,col);
+    const hole=cell.querySelector('.hole');
+    const disc=document.createElement('span');
+    disc.className='disc '+COLORS[player].cls;
+    disc.classList.add(state.def.gravity ? 'drop-anim' : 'pop-anim');
+    hole.appendChild(disc);
+  }
+
+  function highlightWin(cells){
+    for(const [r,c] of cells){
+      const cell=cellEl(r,c);
+      const disc=cell.querySelector('.disc');
+      if(disc) disc.classList.add('win-cell');
+    }
+  }
+
+  function updateStatus(){
+    if(state.winner){
+      const isHuman = state.winner===state.humanPlayer;
+      statusEl.textContent = (isHuman ? '🏆 ' : '') + COLORS[state.winner].name + ' wins — ' + (isHuman?'you win!':'AI wins.');
+      statusEl.className = 'status ' + (isHuman?'win-human':'win-ai');
+      boardWrapEl.className = 'board-wrap ' + (isHuman?'win-human':'win-ai');
+    } else if(state.draw){
+      statusEl.textContent = "🤝 It's a draw.";
+      statusEl.className = 'status draw';
+      boardWrapEl.className = 'board-wrap';
+    } else {
+      const isHumanTurn = state.current===state.humanPlayer;
+      if(isHumanTurn){
+        statusEl.textContent = 'Your turn — '+COLORS[state.current].name;
+      } else {
+        statusEl.innerHTML = 'AI is thinking<span class="thinking-dots"><span></span><span></span><span></span></span>';
+      }
+      statusEl.className = 'status ' + (isHumanTurn?'turn-human':'turn-ai thinking');
+      boardWrapEl.className = 'board-wrap';
+    }
+  }
+
+  function aiTurn(){
+    if(!state || state.over) return;
+    const aiPlayer=state.current, humanPlayer=state.humanPlayer;
+    const board=state.board, def=state.def;
+    let move;
+    if(state.difficulty==='easy') move=easyMove(board,def);
+    else if(state.difficulty==='medium') move=mediumMove(board,def,aiPlayer,humanPlayer);
+    else move=hardMove(board,def,aiPlayer,humanPlayer);
+    state.locked=false;
+    if(move) makeMove(move.row,move.col,aiPlayer);
+  }
+
+})();
+</script>
+</body>
+</html>
